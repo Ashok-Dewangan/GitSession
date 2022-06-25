@@ -189,6 +189,9 @@
 
         $(".select2").select2();
     });
+function xyz(){
+echo "ABCD";
+}
 
     function get_form(custodian_id = 0)
     {
