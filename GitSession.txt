@@ -1,1 +1,483 @@
-changes in GitSession
+@extends('layouts.app')
+@section('pageTitle', isset($pageTitle)?@pageTitle:'Custodian')
+@section('content')
+   <!-- Content area -->
+    <div class="content">
+        <div class="mb-3">
+            <div class="page-header page-header-light">
+                <div class="page-header-content header-elements-inline">
+                    <div class="page-title">
+                        <h5>
+                            <i class="icon-list mr-2"></i> <span class="font-weight-semibold">Custodian</span> List
+                        </h5>
+                    </div>
+                    
+                    <div class="header-elements">
+                        <button type="button" class="btn btn-sm bg-theme-dark waves-effect waves-float waves-light"  onclick="get_form()">
+                            <i class="icon-plus2"></i> Custodian
+                        </button>
+                    </div>
+                </div>
+
+                <div class="breadcrumb-line breadcrumb-line-light">
+                    <div class="breadcrumb">
+                        <a href="{{ route('dashboard') }}" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                        <a href="{{ Request::url() }}" class="breadcrumb-item">Menu</a>
+                        <span class="breadcrumb-item active">Sub Menu</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @include('layouts.flash_message')
+        <!-- /latest orders -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="datatable table table-bordered table-hover table-striped text-center">
+                       <thead class="bg-theme-dark text-whiter">
+                          <tr>
+                             <th>#</th>
+                             <th>CUSTODIAN</th>
+                             <th>CONTACT NO.</th>
+                             <th>LOCATION</th>
+                             <th>DEPARTMENT</th>
+                             <th>SECTION</th>
+                             <th>RESET-PASSWORD</th>
+                             <th width="80">STATUS</th>
+                             <th width="80">ACTION</th>
+                          </tr>
+                       </thead>
+                       <tbody>
+                        @foreach ($custodianList as $key  => $row)
+                            <tr>
+                                <td>{{  ++$key }}</td>
+                                <td>{{ $row->custodian_name }}</td>
+                                <td>{{ $row->custodian_mobile }}</td>
+                                <td>{{ $row->location_name }}</td>
+                                <td>{{ $row->department_name }}</td>
+                                <td>{{ $row->ds_name }}</td>
+                                <td width="80">
+                                    <button type="button" class="btn btn-xs btn-outline-indigo btn-icon waves-effect waves-float waves-light">
+                                        <i class="icon-unlocked2"></i>
+                                     </button>
+                                </td>
+                                <td>
+                                    @if($row->custodian_status)
+                                        <i class='text-success icon-checkmark3' title="Active"></i>
+                                    @else
+                                        <i class='text-danger icon-blocked' title="In-Active"></i>
+                                    @endif
+                                </td>
+                                <td width="80">
+                                    <button type="button" class="btn btn-xs btn-outline-success btn-icon waves-effect waves-float waves-light" onclick="get_form({{ $row->custodian_id }})">
+                                        <i class="icon-pencil3"></i>
+                                     </button>
+                                    <button type="button" class="btn btn-xs btn-outline-danger btn-icon waves-effect waves-float waves-light ml-1" onclick="destroy(this, {{ $row->custodian_id }})">
+                                        <i class="icon-cross2"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        @endforeach
+                       </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+      </div>
+    <!-- /content area -->
+    <div class="modal fade text-start" id="samadhaan_modal" role="dialog" aria-labelledby="samadhaan_modal_label" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+           <div class="modal-content">
+              <form id="samadhaan_form" method="POST" action="{{ route('custodians.store') }}">
+                @csrf
+                 <div class="modal-header bg-theme-dark text-white">
+                    <h5 class="modal-title" id="samadhaan_modal_label">ADD CUSTODIAN</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                 </div>
+                 <div class="modal-body">
+                        <h6 class="font-weight-semibold border-bottom-2 border-success mb-3">Custodian Information</h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Custodian Name</label>
+                                <input type="text" class ="form-control form-control-sm font-weight-bold" name="custodian_name" id="custodian_name" placeholder="Enter custodian name" required>
+                                <input type="hidden" name="custodian_id" id="custodian_id">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Contact No.</label>
+                                <input type="text" class ="form-control form-control-sm font-weight-bold" name="custodian_mobile" id="custodian_mobile" placeholder="Enter contact no." required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="text" class ="form-control form-control-sm font-weight-bold" name="custodian_email" id="custodian_email" placeholder="Enter email">
+                            </div>
+                        </div>
+                        <h6 class="font-weight-semibold border-bottom-2 border-success mb-3">Location, Department & Section </h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Country</label>
+                                <select name="state_country_id" id="state_country_id" class ="form-control form-control-sm font-weight-bold select2" onchange="get_active_country_states(this.value)">
+                                    <option value="">Select Country</option>
+                                    @foreach ($countryList as $row) 
+                                     <option value="{{ $row->country_id }}">{{ $row->country_name }}</option>
+                                    @endforeach
+                                      
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">State</label>
+                                <select name="district_state_id" id="district_state_id" class ="form-control form-control-sm font-weight-bold select2" onchange="get_active_state_districts(this.value)">
+                                    <option value="">Select State</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">District</label>
+                                <select name="custodian_district_id" id="custodian_district_id" class ="form-control form-control-sm font-weight-bold select2" onchange="get_active_district_locations(this.value)">
+                                    <option value="">Select District</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Location</label>
+                                <select name="custodian_location_id" id="custodian_location_id" class ="form-control form-control-sm font-weight-bold select2" onchange="get_active_location_departments(this.value)">
+                                    <option value="">Select Location</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Department</label>
+                                <select name="custodian_department_id" id="custodian_department_id" class ="form-control form-control-sm font-weight-bold select2" onchange="get_active_department_sections(this.value)">
+                                    <option value="">Select Department</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Section</label>
+                                <select name="custodian_ds_id" id="custodian_ds_id" class ="form-control form-control-sm font-weight-bold select2">
+                                    <option value="">Select Section</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3 mt-2">
+                                <div class="custom-control custom-control-right custom-switch custom-control-inline">
+                                    <input type="checkbox" name="custodian_is_ticket_raise_common_asset" class="custom-control-input" id="custodian_is_ticket_raise_common_asset" checked>
+                                    <label class="custom-control-label" for="custodian_is_ticket_raise_common_asset"> Can Ticket Raise for Common Assets</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3 mt-2">
+                                <div class="custom-control custom-control-right custom-switch custom-control-inline">
+                                    <input type="checkbox" name="custodian_status" class="custom-control-input" id="custodian_status" checked>
+                                    <label class="custom-control-label" for="custodian_status"> Status</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer d-flex justify-content-between align-items-center bg-light">
+                        <button type="button" class="btn btn-light" data-dismiss="modal"><i class="icon-arrow-left52 mr-1"></i> Go Back</button>
+                        <button type="submit" class="btn bg-theme-dark waves-effect waves-float waves-light" id="samadhaan_modal_button">SUBMIT</button>
+                    </div>
+                </form>
+           </div>
+        </div>
+     </div>
+@endsection
+@section('script')
+<script>
+    $(document).ready(function() {
+        $.ajaxSetup({
+            data: {
+                "_token": "{{ csrf_token() }}",
+            }
+        });
+
+        $(".select2").select2();
+    });
+
+    function get_form(custodian_id = 0)
+    {
+         startLoader();
+         $("#samadhaan_form").trigger("reset");
+         $("#state_country_id").val('').trigger('change');
+         $("#district_state_id").val('').trigger('change');
+         $("#custodian_district_id").val('').trigger('change');
+         $("#custodian_location_id").val('').trigger('change');
+         $("#custodian_department_id").val('').trigger('change');
+         $("#custodian_ds_id").val('').trigger('change');
+         $("#custodian_id").val(custodian_id);
+
+         if(custodian_id)
+         {
+            $('#samadhaan_form').attr('action', "{{ route('custodians.update') }}");
+            $("#samadhaan_modal_label").html("EDIT CUSTODIAN");
+            $("#samadhaan_modal_button").html("UPDATE");
+            $.ajax({
+               url : "{{ route('custodians.show') }}",
+               method : 'POST',
+               dataType : 'json',
+               data : {custodian_id:custodian_id},
+               success : function(data){
+                     $("#custodian_name").val(data.custodian_name);
+                     $("#custodian_mobile").val(data.custodian_mobile);
+                     $("#custodian_email").val(data.custodian_email);
+                     $("#custodian_location_id").val(data.custodian_location_id);
+                     $("#custodian_department_id").val(data.custodian_department_id);
+                     $("#custodian_ds_id").val(data.custodian_ds_id);
+                     $("#state_country_id").val(data.state_country_id).trigger('change');
+                     get_active_country_states(data.state_country_id, data.district_state_id, data.custodian_district_id, data.custodian_location_id, data.custodian_department_id, data.custodian_ds_id)
+
+                     if(parseInt(data.custodian_is_ticket_raise_common_asset))
+                     {
+                       $("#custodian_is_ticket_raise_common_asset").prop("checked", true);
+                     } else {
+                        $("#custodian_is_ticket_raise_common_asset").removeAttr("checked");
+                     }
+                     
+                     if(parseInt(data.custodian_status))
+                     {
+                       $("#custodian_status").prop("checked", true);
+                     } else {
+                        $("#custodian_status").removeAttr("checked");
+                     }
+                     $("#samadhaan_modal").modal({backdrop: 'static', keyboard: false});
+                     stopLoader();
+                  },
+               error : function(data){
+                     notify('something went wrong!', 'Warning', 'warning')
+                     stopLoader();
+               }
+            });
+         } else {
+            $('#samadhaan_form').attr('action', "{{ route('custodians.store') }}");
+            $("#samadhaan_modal_label").html("ADD CUSTODIAN");
+            $("#samadhaan_modal_button").html("SUBMIT");
+            $("#samadhaan_modal").modal({backdrop: 'static', keyboard: false});
+            stopLoader();
+         }
+    }
+
+    function destroy(thisVal, custodian_id)
+    {
+         if(confirm("Do you want to delete this record?"))
+         {
+            startLoader();
+            $.ajax({
+               type: "post",
+               url: "{{ route('custodians.destroy') }}",
+               data : {custodian_id:custodian_id},
+               dataType :"json",
+               success: function(res) {
+                    if(res)
+                    {
+                        $(thisVal).closest('tr').remove();
+                        stopLoader();
+                    } else {
+                        notify('something went wrong!', 'warning', 'warning')
+                        stopLoader();
+                    }
+               },
+               error: function() {
+                  notify('something went wrong!', 'warning', 'warning')
+                  stopLoader();
+               }
+            });
+         }
+    }
+
+    function get_active_country_states(country_id, district_state_id = 0, custodian_district_id = 0, location_id = 0, department_id = 0, ds_id = 0) 
+    {
+         var innehtml = '<option value ="">Select State</option>';
+         if(country_id)
+         {
+            $.ajax({
+               url : "{{ route('states.getActiveCountryStates') }}",
+               method : 'POST',
+               dataType : 'json',
+               data : {country_id:country_id},
+               success : function(data)
+               {
+                    if(data.status)
+                    {
+                        var result = data.result;
+                        for(var j=0 ; j<result.length; j++)
+                        {
+                            if(district_state_id == result[j].state_id)
+                            {
+                                innehtml += '<option value ="'+result[j].state_id+'" selected>'+result[j].state_name+'</option>';
+                            } else {
+                                innehtml += '<option value ="'+result[j].state_id+'">'+result[j].state_name+'</option>';
+                            }
+                        }
+                    }
+                    $('#district_state_id').html(innehtml).trigger('change');
+                    get_active_state_districts(district_state_id, custodian_district_id, location_id, department_id, ds_id)
+               },
+               error : function(data)
+               {
+                  $('#district_state_id').html(innehtml);
+                  $('#district_state_id').val('').trigger('change');
+               }
+            });
+         } else {
+            $('#district_state_id').html(innehtml);
+            $('#district_state_id').val('').trigger('change');
+         }
+    }
+
+    function get_active_state_districts(state_id, custodian_district_id = 0, location_id = 0, department_id = 0, ds_id = 0) 
+    {
+         var innehtml = '<option value ="">Select District</option>';
+         if(state_id)
+         {
+            $.ajax({
+               url : "{{ route('districts.getActiveStateDistricts') }}",
+               method : 'POST',
+               dataType : 'json',
+               data : {state_id:state_id},
+               success : function(data)
+               {
+                    if(data.status)
+                    {
+                        var result = data.result;
+                        for(var j=0 ; j<result.length; j++)
+                        {
+                            if(custodian_district_id == result[j].district_id)
+                            {
+                                innehtml += '<option value ="'+result[j].district_id+'" selected>'+result[j].district_name+'</option>';
+                            } else {
+                                innehtml += '<option value ="'+result[j].district_id+'">'+result[j].district_name+'</option>';
+                            }
+                        }
+                    }
+                    $('#custodian_district_id').html(innehtml).trigger('change');
+                    get_active_district_locations(custodian_district_id, location_id, department_id, ds_id)
+               },
+               error : function(data)
+               {
+                  $('#custodian_district_id').html(innehtml);
+                  $('#custodian_district_id').val('').trigger('change');
+               }
+            });
+         } else {
+            $('#custodian_district_id').html(innehtml);
+            $('#custodian_district_id').val('').trigger('change');
+         }
+    }
+
+    function get_active_district_locations(custodian_district_id, location_id = 0, department_id = 0, ds_id = 0) 
+    {
+         var innehtml = '<option value ="">Select Location</option>';
+         if(custodian_district_id)
+         {
+            $.ajax({
+               url : "{{ route('locations.getActiveDistrictLocations') }}",
+               method : 'POST',
+               dataType : 'json',
+               data : {district_id:custodian_district_id},
+               success : function(data)
+               {
+                    if(data.status)
+                    {
+                        var result = data.result;
+                        for(var j=0 ; j<result.length; j++)
+                        {
+                            if(location_id == result[j].location_id)
+                            {
+                                innehtml += '<option value ="'+result[j].location_id+'" selected>'+result[j].location_name+'</option>';
+                            } else {
+                                innehtml += '<option value ="'+result[j].location_id+'">'+result[j].location_name+'</option>';
+                            }
+                        }
+                    }
+                    $('#custodian_location_id').html(innehtml).trigger('change');
+                    get_active_location_departments(location_id, department_id, ds_id)
+               },
+               error : function(data)
+               {
+                  $('#custodian_location_id').html(innehtml);
+                  $('#custodian_location_id').val('').trigger('change');
+               }
+            });
+         } else {
+            $('#custodian_location_id').html(innehtml);
+            $('#custodian_location_id').val('').trigger('change');
+         }
+    }
+
+    function get_active_location_departments(location_id, department_id = 0, ds_id = 0) 
+    {
+         var innehtml = '<option value ="">Select Department</option>';
+         if(location_id)
+         {
+            $.ajax({
+               url : "{{ route('departments.getActiveLocationDepartments') }}",
+               method : 'POST',
+               dataType : 'json',
+               data : {location_id:location_id},
+               success : function(data)
+               {
+                    if(data.status)
+                    {
+                        var result = data.result;
+                        for(var j=0 ; j<result.length; j++)
+                        {
+                            if(department_id == result[j].department_id)
+                            {
+                                innehtml += '<option value ="'+result[j].department_id+'" selected>'+result[j].department_name+'</option>';
+                            } else {
+                                innehtml += '<option value ="'+result[j].department_id+'">'+result[j].department_name+'</option>';
+                            }
+                        }
+                    }
+                    $('#custodian_department_id').html(innehtml).trigger('change');
+                    get_active_department_sections(department_id, ds_id) 
+               },
+               error : function(data)
+               {
+                  $('#custodian_department_id').html(innehtml);
+                  $('#custodian_department_id').val('').trigger('change');
+               }
+            });
+         } else {
+            $('#custodian_department_id').html(innehtml);
+            $('#custodian_department_id').val('').trigger('change');
+         }
+    }
+
+    function get_active_department_sections(department_id, ds_id = 0) 
+    {
+         var innehtml = '<option value ="">Select Section</option>';
+         if(department_id)
+         {
+            var custodian_location_id = $("#custodian_location_id").val();
+            $.ajax({
+               url : "{{ route('department-sections.getActiveDepartmentSections') }}",
+               method : 'POST',
+               dataType : 'json',
+               data : {location_id:custodian_location_id, department_id:department_id},
+               success : function(data)
+               {
+                    if(data.status)
+                    {
+                        var result = data.result;
+                        for(var j=0 ; j<result.length; j++)
+                        {
+                            if(ds_id == result[j].ds_id)
+                            {
+                                innehtml += '<option value ="'+result[j].ds_id+'" selected>'+result[j].ds_name+'</option>';
+                            } else {
+                                innehtml += '<option value ="'+result[j].ds_id+'">'+result[j].ds_name+'</option>';
+                            }
+                        }
+                    }
+                    $('#custodian_ds_id').html(innehtml).trigger('change');
+               },
+               error : function(data)
+               {
+                  $('#custodian_ds_id').html(innehtml);
+                  $('#custodian_ds_id').val('').trigger('change');
+               }
+            });
+         } else {
+            $('#custodian_ds_id').html(innehtml);
+            $('#custodian_ds_id').val('').trigger('change');
+         }
+    }
+</script>
+@endsection
